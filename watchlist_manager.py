@@ -1,52 +1,79 @@
-import yfinance as yf
+'''
+watchlist manager
+'''
+
+from typing import List, Optional
+from pathlib import Path
+
+from a_data_retriever import DataRetriever
+from stock_analyzer import StockAnalyzer
+
+
 class WatchlistManager:
-    def __init__(self):
-        '''
-        Initialize an empty watchlist to put data in.
-        '''
-        self.watchlist = []
+    'Manage the stock watchlist.'
+    def __init__(self, filename: str = "watchlist.txt") -> None:
+        self.filename = Path(filename)
+        self.watchlist: List[str] = [] # Initialize an empty watchlist to put data in.
+        self.load_watchlist()
 
+    def load_watchlist(self) -> None:
+        if not self.filename.exists():
+            return
 
-    def add_stock(self, ticker): #ChatGPT, 2026. Chat defined this method. https://chatgpt.com/share/69bd37c3-fe40-8000-a9b3-52a0fdb5ca01.
-        '''
-        Add a ticker to the watchlist if it's not already there.
-        '''
-        ticker = ticker.upper()
+        try:
+            saved_tickers = self.filename.read_text().splitlines()
+        except OSError:
+            return
 
-        if ticker not in self.watchlist:
+        for ticker in saved_tickers:
+            self._add_stock_without_saving(ticker)
+
+    def save_watchlist(self) -> None:
+        try:
+            self.filename.write_text("\n".join(self.watchlist))
+        except OSError:
+            pass
+
+    def _add_stock_without_saving(self, ticker: str) -> None:
+        ticker = ticker.strip().upper()
+        if ticker and ticker not in self.watchlist:
             self.watchlist.append(ticker)
 
+    def add_stock(self, ticker: str) -> None:
+        ticker = ticker.strip().upper()
+        if ticker and ticker not in self.watchlist: # Add a ticker to the watchlist if it's not already there.
+            self.watchlist.append(ticker)
+            self.save_watchlist()
 
-    def remove_stock(self, ticker):
-        '''
-        Remove a ticker from the watchlist.
-        '''
-        if ticker in self.watchlist:
+    def remove_stock(self, ticker: str) -> None:
+        ticker = ticker.strip().upper()
+        if ticker in self.watchlist: # Remove a ticker from the watchlist.
             self.watchlist.remove(ticker)
+            self.save_watchlist()
 
+    def get_watchlist(self) -> List[str]:
+        return list(self.watchlist) # Return the watchlist.
 
-    def get_watchlist(self):
-        '''
-        Return the watchlist of tickers.
-        '''
-        return self.watchlist
-    
+    def filter_by_volatility(
+        self,
+        retriever: "DataRetriever",
+        analyzer: "StockAnalyzer",
+        threshold: float
+    ) -> List[str]:
+        filtered: List[str] = [] # Initialie list to store tickers that meet volatility condition.
 
-    def filter_by_volatility(self, retriever, analyzer, threshold): #ChatGPT, 2026. created this method and explained it to me. https://chatgpt.com/share/69bd3ae9-b7e4-8000-88db-b3718895c89d
-        '''
-        Filter the watchlist based on volatility.
-        '''
-        filtered = [] # Stores tickers that pass the filter
+        for ticker in self.watchlist: # Loop through each ticker in the user's watchlist
+            data = retriever.pull_data(ticker) # Pull historical data for the ticker
+            if data is None or data.empty: # Skip ticker if none / df is empty
+                continue
 
-        for ticker in self.watchlist: 
-            retriever.pull_data(ticker) # Calls DataRetriever, downloads stock data, and stores in stock_data
+            analyzer.stock_data = data # Assign the retrieved data to the analyzer
+            volatility_series = analyzer.calculate_volatility() # Calculate the rolling volatility for the ticker
+            if volatility_series is  None:
+                continue
+               
+            latest = volatility_series.dropna() # Remove NaN values
+            if not latest.empty and float(latest.iloc[-1]) > threshold: # Check that the series isn't empty and latest volatility exceeds threshold
+                    filtered.append(ticker)
 
-            if retriever.stock_data is not None and not retriever.stock_data.empty: # Prevents crashes
-                analyzer.stock_data = retriever.stock_data # Run the data through the analyzer
-                volatility = analyzer.calculate_volatility() # Will calculate volatility from analyzer class
-
-            if volatility is not None and volatility > threshold: 
-                filtered.append(ticker) # Keeps stocks that are above threshold
-
-        return filtered
-    
+        return filtered # Return the list that passed the volatility filter
