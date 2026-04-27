@@ -34,13 +34,13 @@ class StockApp:
         self.font = pygame.font.SysFont(None, 30)
         self.small_font = pygame.font.SysFont(None, 24)
 
-        self.current_price = MetricLabel(20, 75, self.font, "Price", (0, 0, 255))
-        self.moving_average = MetricLabel(20, 110, self.font, "MA(50)", (0, 150, 0))
-        self.rsi = RSI(20, 145, self.font, "RSI")
-        self.volatility = MetricLabel(20, 180, self.font, "Volatility", (120, 0, 120))
+        self.current_price = MetricLabel(50, 88, self.font, "Price", (0, 0, 255))
+        self.moving_average = MetricLabel(270, 88, self.font, "MA(50)", (0, 150, 0))
+        self.rsi = RSI(490, 88, self.font, "RSI")
+        self.volatility = MetricLabel(650, 88, self.font, "Volatility", (120, 0, 120))
 
-        self.watchlist = WatchlistPanel(1000, 20, self.font)
-        self.price_chart = PriceChart(50, 240, 900, 330)
+        self.watchlist = WatchlistPanel(820, 145, self.font)
+        self.price_chart = PriceChart(60, 190, 710, 300)
 
         self.retriever = DataRetriever()
         self.analyzer = StockAnalyzer(None)
@@ -56,13 +56,13 @@ class StockApp:
         self.filter_active = False
         self.filtered_watchlist: List[str] = []
 
-        self.input_rect = pygame.Rect(180, 18, 190, 36)
+        self.input_rect = pygame.Rect(140, 18, 170, 34)
         self.buttons = {
-            "search": AppButton(pygame.Rect(385, 18, 85, 36), "Search", self.small_font),
-            "add": AppButton(pygame.Rect(485, 18, 120, 36), "Add", self.small_font),
-            "remove": AppButton(pygame.Rect(620, 18, 120, 36), "Remove", self.small_font),
-            "filter": AppButton(pygame.Rect(755, 18, 125, 36), "Filter", self.small_font),
-            "clear": AppButton(pygame.Rect(895, 18, 90, 36), "Clear", self.small_font),
+            "search": AppButton(pygame.Rect(325, 18, 80, 34), "Search", self.small_font),
+            "add": AppButton(pygame.Rect(420, 18, 80, 34), "Add", self.small_font),
+            "remove": AppButton(pygame.Rect(515, 18, 95, 34), "Remove", self.small_font),
+            "filter": AppButton(pygame.Rect(625, 18, 85, 34), "Filter", self.small_font),
+            "clear": AppButton(pygame.Rect(725, 18, 75, 34), "Clear", self.small_font),
         }
 
         if self.ticker:
@@ -248,14 +248,14 @@ class StockApp:
             f"Up/Down = threshold ({self.volatility_threshold:.3f})",
         ]
 
-        y = 610
+        y = 535
         for line in instructions:
             text = self.small_font.render(line, True, (40, 40, 40))
             self.screen.blit(text, (50, y))
             y += 24
 
         status = self.small_font.render(self.status_message, True, (20, 20, 20))
-        self.screen.blit(status, (50, 750))
+        self.screen.blit(status, (50, 650))
 
     def run_game(self) -> None:
         '''Start the main loop for the app until the user quits.'''
@@ -283,3 +283,7 @@ class StockApp:
 
             pygame.display.flip()
             self.clock.tick(60)
+
+
+if __name__ == "__main__":
+    StockApp().run_game()
